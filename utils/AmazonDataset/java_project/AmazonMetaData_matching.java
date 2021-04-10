@@ -201,14 +201,22 @@ public class AmazonMetaData_matching {
         Writer queryWriter = getGzWriter(indexed_review_path + "product_query.txt.gz");
         for (String pid : productIds){
             List<List<Integer>> category = productIndexedQueries.get(pid);
-            for (List<Integer> q : category){
-                queryWriter.write("c" + q.get(0) + "\t"); // write the number of subcategory
-                for (int i=1;i<q.size();i++){
-                    queryWriter.write(q.get(i) + " ");
+            try {
+                for (List<Integer> q : category){
+                    System.out.print("c" + q.get(0) + "\t");
+                    queryWriter.write("c" + q.get(0) + "\t"); // write the number of subcategory
+                    for (int i=1;i<q.size();i++){
+                        System.out.print(q.get(i) + " ");
+                        queryWriter.write(q.get(i) + " ");
+                    }
+                    System.out.print(";");
+                    queryWriter.write(";");
                 }
-                queryWriter.write(";");
+                System.out.print(";");
+                queryWriter.write("\n");
+            } catch (NullPointerException e) {
+                System.out.println("category info not found for " + pid);
             }
-            queryWriter.write("\n");
         }
         queryWriter.close();
     }
