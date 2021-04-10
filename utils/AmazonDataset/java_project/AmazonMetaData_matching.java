@@ -99,9 +99,9 @@ public class AmazonMetaData_matching {
             JSONObject obj = new JSONObject(line);
             String productId = "";
     
-            try {
+            if (obj.hasKey("asin")) {
                 productId = obj.getString("asin");
-            } catch (org.json.JSONException e) {
+            } else {
                 System.out.println("Not found: asin");
                 System.out.println(line);
                 processingNoError = false;
@@ -110,9 +110,9 @@ public class AmazonMetaData_matching {
             if (processingNoError == true && productIndexs.containsKey(productId)){
                 JSONArray category = new JSONArray();
 
-                try {
+                if (obj.hasKey("category")) {
                     category = obj.getJSONArray("category");
-                } catch (org.json.JSONException e) {
+                } else {
                     System.out.println("Not found: categories");
                     System.out.println(line);
                     processingNoError = false;
@@ -168,10 +168,14 @@ public class AmazonMetaData_matching {
                         //finalQuery.add(cat.length()); // record the number of subcategories
                         finalQuery.add(category.length());
                         productIndexedQueries.get(productId).add(Lists.reverse(finalQuery));
-                        /*System.out.println(Arrays.toString(Lists.reverse(finalQuery).toArray()));
-                        for (Integer index : Lists.reverse(finalQuery)){
-                            System.out.println(vocabList.get(index));
-                        }*/
+                        //if (finalQuery.size() == 1) {
+                        //    System.out.println("finalQuery length " + finalQuery.size());
+                        //    System.out.println(Arrays.toString(Lists.reverse(finalQuery).toArray()));
+                        //    for (Integer index : Lists.reverse(finalQuery)){
+                        //        System.out.println(vocabList.get(index));
+                        //    }
+                        //}
+
 
                     }
                 }
@@ -202,18 +206,16 @@ public class AmazonMetaData_matching {
         for (String pid : productIds){
             List<List<Integer>> category = productIndexedQueries.get(pid);
             try {
-                for (List<Integer> q : category){
-                    System.out.print("c" + q.get(0) + "\t");
-                    queryWriter.write("c" + q.get(0) + "\t"); // write the number of subcategory
-                    for (int i=1;i<q.size();i++){
-                        System.out.print(q.get(i) + " ");
-                        queryWriter.write(q.get(i) + " ");
+                if (category.size() > 0) {
+                    for (List<Integer> q : category){
+                        queryWriter.write("c" + q.get(0) + "\t"); // write the number of subcategory
+                        for (int i=1;i<q.size();i++){
+                            queryWriter.write(q.get(i) + " ");
+                        }
+                        queryWriter.write(";");
                     }
-                    System.out.print(";");
-                    queryWriter.write(";");
+                    queryWriter.write("\n");
                 }
-                System.out.print(";");
-                queryWriter.write("\n");
             } catch (NullPointerException e) {
                 System.out.println("category info not found for " + pid);
             }
