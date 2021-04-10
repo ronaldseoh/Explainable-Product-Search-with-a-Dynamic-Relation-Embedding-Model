@@ -1,5 +1,6 @@
 import os,sys
 import gzip, operator
+import json
 
 review_file = sys.argv[1]
 output_path = sys.argv[2]
@@ -14,7 +15,7 @@ user_set = set()
 product_set = set()
 with gzip.open(review_file, 'r') as g:
 	for l in g:
-		l = eval(l)
+		l = json.loads(l)
 		user = l['reviewerID']
 		product = l['asin']
 		review_text = l['reviewText']
@@ -68,7 +69,7 @@ with gzip.open(output_path + 'review_text.txt.gz', 'wt') as fout_text, gzip.open
 		with gzip.open(review_file, 'r') as g:
 			index = 0
 			for l in g:
-				l = eval(l)
+				l = json.loads(l)
 				user = l['reviewerID']
 				product = l['asin']
 				review_text = l['reviewText']
