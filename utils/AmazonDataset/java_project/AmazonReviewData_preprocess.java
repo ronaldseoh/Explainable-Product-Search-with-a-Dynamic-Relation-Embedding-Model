@@ -54,14 +54,20 @@ public class AmazonReviewData_preprocess {
         while( line != null){
             JSONObject obj = new JSONObject(line);
             for (String key : text_field_name){
-                String input = obj.getString(key);
-                List<String> terms = DataProcess.tokenize(input.replaceAll("[^a-zA-Z ]", "").toLowerCase());
-                StringBuffer output = new StringBuffer();
-                for (String t : terms){
-                    if (stopwords != null && stopwords.contains(t)) continue;
-                    output.append(stemmer.stem(t) + " ");
+                try {
+                    String input = obj.getString(key);
+                    List<String> terms = DataProcess.tokenize(input.replaceAll("[^a-zA-Z ]", "").toLowerCase());
+                    StringBuffer output = new StringBuffer();
+                    for (String t : terms){
+                        if (stopwords != null && stopwords.contains(t)) continue;
+                        output.append(stemmer.stem(t) + " ");
+                    }
+                    obj.put(key, output.toString());
+                } catch (org.json.JSONException e) {
+                    System.out.println("Not found: " + key);
+                    System.out.println(line);
                 }
-                obj.put(key, output.toString());
+                    
             }
             //System.out.println(obj.toString());
             writer.write(obj.toString() + "\n");
