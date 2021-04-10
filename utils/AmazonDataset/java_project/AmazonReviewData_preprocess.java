@@ -53,6 +53,8 @@ public class AmazonReviewData_preprocess {
         String line = buffered.readLine();
         while( line != null){
             JSONObject obj = new JSONObject(line);
+            boolean processingNoError = true;
+
             for (String key : text_field_name){
                 try {
                     String input = obj.getString(key);
@@ -63,16 +65,24 @@ public class AmazonReviewData_preprocess {
                         output.append(stemmer.stem(t) + " ");
                     }
                     obj.put(key, output.toString());
+
                 } catch (org.json.JSONException e) {
                     System.out.println("Not found: " + key);
                     System.out.println(line);
+                    processingNoError = false;
+                    break;
                 }
                     
             }
+
             //System.out.println(obj.toString());
-            writer.write(obj.toString() + "\n");
+            if (processingNoError == true) {
+                writer.write(obj.toString() + "\n");
+            }
+
             line = buffered.readLine();
         }
+
         writer.close();
     }
 }
