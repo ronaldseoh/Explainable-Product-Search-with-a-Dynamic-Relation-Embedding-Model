@@ -95,54 +95,88 @@ public class AmazonMetaData_matching {
         BufferedReader metaReader = getGzReader(meta_file);
         line = metaReader.readLine();
         while( line != null){
+            boolean processingNoError = true;
             JSONObject obj = new JSONObject(line);
-            String productId = obj.getString("asin");
-            if (productIndexs.containsKey(productId)){
-                //System.out.println(line);
-                // merge description and title
-                StringBuilder des = new StringBuilder();
-                for (String key : text_field_name){
-                    if (obj.has(key)){
-                        des.append(obj.getString(key));
-                        des.append(" ");
-                    }
+            String productId = "";
+    
+            try {
+                productId = obj.getString("asin");
+            } catch (org.json.JSONException e) {
+                System.out.println("Not found: asin");
+                System.out.println(line);
+                processingNoError = false;
+            }
+
+            if (processingNoError == true && productIndexs.containsKey(productId)){
+                JSONArray category = new JSONArray();
+
+                try {
+                    category = obj.getJSONArray("category");
+                } catch (org.json.JSONException e) {
+                    System.out.println("Not found: categories");
+                    System.out.println(line);
+                    processingNoError = false;
                 }
-                //System.out.println(des);
-                productIndexedDes.put(productId,getIndexedString(des.toString(),vocabIndexs,stopwords));
-                //System.out.println(Arrays.toString(getIndexedString(des,vocabIndexs,stopwords).toArray()));
+                
+                if (processingNoError == true) {
+                    //System.out.println(line);
+                    // merge description and title
+                    StringBuilder des = new StringBuilder();
+                    for (String key : text_field_name){
+                        if (obj.has(key)){
+                            if (key.equals("description")) {
+                                JSONArray description_array = obj.getJSONArray("description");
+                                
+                                for (int d = 0; d < description_array.length(); d++) {
+                                    des.append(description_array.getString(d));
+                                    des.append(" ");
+                                }
+                            } else {
+                                des.append(obj.getString(key));
+                                des.append(" ");
+                            }
+                        }
+                    }
+                    //System.out.println(des);
+                    productIndexedDes.put(productId,getIndexedString(des.toString(),vocabIndexs,stopwords));
+                    //System.out.println(Arrays.toString(getIndexedString(des,vocabIndexs,stopwords).toArray()));
 
-                // get query from categories
-                JSONArray category =  obj.getJSONArray("categories");
-                //JSONArray<List<String>> category = (List<List<String>>)obj.get("categories");
-                productIndexedQueries.put(productId, new ArrayList<List<Integer>>());
-                for (int i=0;i<category.length();i++){
-                    JSONArray cat = category.getJSONArray(i);
-                    StringBuilder query = new StringBuilder();
-                    for (int j=0;j<cat.length();j++){
-                        String q = cat.getString(j);
-                        query.append(q);
+                    // get query from categories
+                    //JSONArray<List<String>> category = (List<List<String>>)obj.get("categories");
+                    productIndexedQueries.put(productId, new ArrayList<List<Integer>>());
+                    for (int i=0;i<category.length();i++){
+                        //JSONArray cat = category.getJSONArray(i);
+                        StringBuilder query = new StringBuilder();
+                        //for (int j=0;j<cat.length();j++){
+                        //    String q = cat.getString(j);
+                        //    query.append(q);
+                        //    query.append(" ");
+                        //}
+                        query.append(category.getString(i));
                         query.append(" ");
-                    }
-                    //System.out.println(query);
-                    List<Integer> indexedQuery = getIndexedString(query.toString(),vocabIndexs,stopwords);
-                    // deduplicate
-                    Set appearedIndex = new HashSet();
-                    List<Integer> finalQuery = new ArrayList<>();
-                    for (int j=indexedQuery.size()-1; j >= 0 ;j--) {
-                        Integer t = indexedQuery.get(j);
-                        if (appearedIndex.contains(t)) continue;
-                        appearedIndex.add(t);
-                        finalQuery.add(t);
-                    }
-                    finalQuery.add(cat.length()); // record the number of subcategories
-                    productIndexedQueries.get(productId).add(Lists.reverse(finalQuery));
-                    /*System.out.println(Arrays.toString(Lists.reverse(finalQuery).toArray()));
-                    for (Integer index : Lists.reverse(finalQuery)){
-                        System.out.println(vocabList.get(index));
-                    }*/
 
+                        List<Integer> indexedQuery = getIndexedString(query.toString(),vocabIndexs,stopwords);
+                        // deduplicate
+                        Set appearedIndex = new HashSet();
+                        List<Integer> finalQuery = new ArrayList<>();
+                        for (int j=indexedQuery.size()-1; j >= 0 ;j--) {
+                            Integer t = indexedQuery.get(j);
+                            if (appearedIndex.contains(t)) continue;
+                            appearedIndex.add(t);
+                            finalQuery.add(t);
+                        }
+                        //finalQuery.add(cat.length()); // record the number of subcategories
+                        finalQuery.add(category.length());
+                        productIndexedQueries.get(productId).add(Lists.reverse(finalQuery));
+                        /*System.out.println(Arrays.toString(Lists.reverse(finalQuery).toArray()));
+                        for (Integer index : Lists.reverse(finalQuery)){
+                            System.out.println(vocabList.get(index));
+                        }*/
+
+                    }
                 }
             }
+
             line = metaReader.readLine();
         }
         metaReader.close();
@@ -151,10 +185,15 @@ public class AmazonMetaData_matching {
         Writer desciptionWriter = getGzWriter(indexed_review_path + "product_des.txt.gz");
         for (String pid : productIds){
             List<Integer> termIndexes = productIndexedDes.get(pid);
-            for (Integer t : termIndexes){
-                desciptionWriter.write(t + " ");
+            try {
+                for (Integer t : termIndexes){
+                    desciptionWriter.write(t + " ");
+                }
+
+                desciptionWriter.write("\n");
+            } catch (NullPointerException e) {
+                System.out.println("termIndexes not found for " + pid);
             }
-            desciptionWriter.write("\n");
         }
         desciptionWriter.close();
 
