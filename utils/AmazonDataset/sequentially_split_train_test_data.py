@@ -2,6 +2,12 @@ import os,sys
 import gzip
 import random
 import numpy as np
+
+# Random seed fix
+random_seed = 696
+random.seed(random_seed)
+np.random.seed(random_seed)
+
 import json
 
 data_path = sys.argv[1]
